@@ -1,0 +1,302 @@
+import React, { useState, useEffect, memo, Suspense } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+
+// 1. Modularization: Move modulesData to a separate file (simulated here)
+const modulesData = [
+    {
+        title: 'Introduction to AI in Education',
+        description: 'Explore the basics of AI and its potential applications in the educational landscape.',
+        link: '/module1',
+        icon: 'BookOpen',
+        color: 'blue',
+    },
+    {
+        title: 'AI Platforms and Their Benefits for Teachers',
+        description: 'Discover various AI platforms and how they can assist teachers in their daily tasks.',
+        link: '/module2',
+        icon: 'BrainCircuit',
+        color: 'green',
+    },
+    {
+        title: 'Prompting Basics for Teacher Support and Differentiating',
+        description: 'Learn the fundamentals of effective prompting for AI tools to support instruction and differentiation.',
+        link: '/module3',
+        icon: 'Code2',
+        color: 'purple',
+    },
+    {
+        title: 'Prompting Expert for Graphic Design and Poster Creation',
+        description: 'Master advanced prompting techniques for creating engaging visual materials using AI.',
+        link: '/module4',
+        icon: 'Zap',
+        color: 'yellow',
+    },
+    {
+        title: 'FERPA and Student Privacy Concerns with AI',
+        description: 'Understand the critical importance of FERPA regulations and student data privacy when using AI in education.',
+        link: '/module5',
+        icon: 'ShieldAlert',
+        color: 'red',
+    },
+];
+
+// 5. Styling: Use CSS variables (simulated with a JS object)
+const WpsTheme = {
+    navy: '#00305e',
+    maroon: '#851e3e',
+    blue: '#3b82f6',
+    green: '#22c55e',
+    purple: '#8b5cf6',
+    yellow: '#f59e0b',
+    red: '#ef4444',
+    gray: '#d1d5db',
+    white: '#ffffff',
+};
+
+// 3. Enhance reusability: Abstract color logic
+const getColor = (color: string) => {
+    switch (color) {
+        case 'blue': return { bg: 'bg-blue-600', hover: 'hover:bg-blue-700' };
+        case 'green': return { bg: 'bg-green-600', hover: 'hover:bg-green-700' };
+        case 'purple': return { bg: 'bg-purple-600', hover: 'hover:bg-purple-700' };
+        case 'yellow': return { bg: 'bg-yellow-600', hover: 'hover:bg-yellow-700' };
+        case 'red': return { bg: 'bg-red-600', hover: 'hover:bg-red-700' };
+        default: return {};
+    }
+};
+
+// 2. Accessibility Improvements and 3. Enhance Reusability:  Reusable card component
+const ModuleCard = memo(({ module, isCompleted, onComplete }: {
+    module: typeof modulesData[0],
+    isCompleted: boolean,
+    onComplete: () => void
+}) => {
+    const { bg, hover } = getColor(module.color);
+    const IconComponent = React.lazy(() =>
+        import(`lucide-react`).then((mod) => {
+            const iconName = module.icon;
+            return { default: mod[iconName] || (() => null) }; // Return a component or a null function
+        })
+    );
+
+    return (
+        <Card
+            className={cn(
+                'transition-all duration-300 transform hover:scale-[1.02]',
+                'border-2 border-gray-200 shadow-lg',
+                'hover:shadow-xl hover:border-opacity-0',
+                'bg-white/80 backdrop-blur-md',
+                'hover:from-white/90 hover:to-white/90',
+                `hover:from-border hover:via-white/90 hover:to-white/90`
+            )}
+        >
+            <CardHeader>
+                <div className="flex items-center gap-3">
+                    <Suspense fallback={<div>Loading Icon...</div>}>
+                        <IconComponent className={`w-6 h-6 text-${module.color}-400`} aria-hidden="true" />
+                    </Suspense>
+                    <CardTitle
+                        className={cn(
+                            'text-lg font-semibold',
+                            `text-${module.color}-700`
+                        )}
+                    >
+                        {module.title}
+                    </CardTitle>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <CardDescription className="text-gray-600">
+                    {module.description}
+                </CardDescription>
+                <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">
+                        {isCompleted ? 'Completed' : 'Start Module'}
+                    </span>
+                    <Button
+                        as="a"
+                        href={module.link}
+                        onClick={onComplete}
+                        className={cn(
+                            'mt-4',
+                            'transition-all duration-200',
+                            'hover:bg-opacity-90',
+                            'text-white font-semibold flex items-center',
+                            bg,
+                            hover,
+                            `shadow-md hover:shadow-lg`
+                        )}
+                        aria-label={isCompleted ? `View completed ${module.title} module` : `Start ${module.title} module`}
+                    >
+                        {isCompleted ? 'Completed' : 'Start Module'}
+                        {isCompleted && <CheckCircle className="w-4 h-4 ml-2 text-white" aria-hidden="true" />}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    );
+});
+ModuleCard.displayName = 'ModuleCard';
+
+const HomePage = () => {
+    const [completedModules, setCompletedModules] = useState<number[]>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('completedModules');
+            try {
+                return saved ? JSON.parse(saved) : [];
+            } catch (e) {
+                console.error("Failed to parse saved completed modules", e);
+                return [];
+            }
+        }
+        return [];
+    });
+
+    // 4. Performance Optimizations: Debounce localStorage updates
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('completedModules', JSON.stringify(completedModules));
+            }
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(timer);
+    }, [completedModules]);
+
+    const handleModuleComplete = (moduleIndex: number) => {
+        if (!completedModules.includes(moduleIndex)) {
+            setCompletedModules(prev => [...prev, moduleIndex]);
+        }
+    };
+
+    // 6. Testing: Add a reset button
+    const resetProgress = () => setCompletedModules([]);
+
+
+    // 7. Additional Features
+    const progress = (completedModules.length / modulesData.length) * 100;
+
+    return (
+        <div
+            className="min-h-screen bg-gradient-to-br from-white to-gray-100 flex flex-col"
+        >
+            {/* 5. Semantic HTML */}
+            <header
+                className={cn(
+                    'py-4 px-6 md:px-8',
+                    `bg-[${WpsTheme.navy}]`,
+                    'text-white',
+                    'shadow-md'
+                )}
+            >
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <h1
+                            className={cn(
+                                'text-xl sm:text-2xl font-bold',
+                                'tracking-tight'
+                            )}
+                        >
+                            Waterbury Public Schools
+                        </h1>
+                    </div>
+                </div>
+            </header>
+
+            {/* 5. Semantic HTML */}
+            <main className="flex-1 p-4 sm:p-6 md:p-8 flex items-center justify-center">
+                <div className="max-w-4xl w-full space-y-6">
+                    <div className="text-center space-y-4">
+                        <h2
+                            className={cn(
+                                'text-3xl sm:text-4xl md:text-5xl font-extrabold',
+                                'bg-clip-text text-transparent',
+                                `bg-gradient-to-r from-blue-600 to-maroon-600`,
+                                'drop-shadow-lg',
+                                'mb-4'
+                            )}
+                        >
+                            Mini-Course: AI in Education
+                        </h2>
+                        <p className="text-gray-600 sm:text-lg">
+                            Welcome to this mini-course designed for Waterbury Public Schools educators.
+                            This course will equip you with the knowledge and skills to effectively
+                            integrate Artificial Intelligence (AI) into your teaching practices while
+                            upholding the highest standards of student privacy and ethical
+                            considerations.
+                        </p>
+                        <p className="text-gray-700 sm:text-lg font-medium">
+                            Specifically, you will learn how to leverage AI to enhance your
+                            instructional strategies, create engaging learning materials, and ensure
+                            compliance with FERPA regulations.
+                        </p>
+                    </div>
+
+                    {/* 7. Progress bar */}
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <motion.div
+                            className={`bg-[${WpsTheme.blue}] h-2.5 rounded-full`}
+                            style={{ width: `${progress}%` }}
+                            initial={{ width: '0%' }}
+                            animate={{ width: `${progress}%` }}
+                            transition={{ duration: 0.5 }}
+                            role="progressbar"
+                            aria-valuenow={progress}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label="Course Progress" // Add aria-label
+                        />
+                        <div className="text-right text-sm font-medium text-blue-700 mt-1">{completedModules.length} / {modulesData.length} Modules</div>
+                    </div>
+
+                    {/* 5. Semantic HTML */}
+                    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <AnimatePresence>
+                            {modulesData.map((module, index) => (
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                                >
+                                    <ModuleCard
+                                        module={module}
+                                        isCompleted={completedModules.includes(index)}
+                                        onComplete={() => handleModuleComplete(index)}
+                                    />
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                    </section>
+
+                    <div className="text-center py-6">
+                        <p className="text-gray-700 sm:text-lg">
+                            By the end of this course, you will be able to confidently and
+                            responsibly integrate AI tools into your teaching practices,
+                            ultimately enhancing the learning experience for your students.
+                        </p>
+                    </div>
+                </div>
+            </main>
+
+            {/* 5. Semantic HTML */}
+            <footer
+                className={cn(
+                    'py-4 px-6 md:px-8',
+                    `bg-[${WpsTheme.navy}]`,
+                    'text-white text-center',
+                    'text-sm'
+                )}
+            >
+                &copy; Waterbury Public Schools 2025
+            </footer>
+        </div>
+    );
+};
+
+export default HomePage;
