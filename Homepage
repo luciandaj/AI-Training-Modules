@@ -1,49 +1,148 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { BookOpen, BrainCircuit, Code2, ShieldAlert, Zap, CheckCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// Define the district colors
-const navy = '#00305e';  // Dark Blue (Navy)
-const maroon = '#851e3e'; // Maroon
-
-// Module Data
-const modules = [
+// 1. Separate concerns: Create a separate module for the modules data
+const modulesData = [
     {
         title: 'Introduction to AI in Education',
         description: 'Explore the basics of AI and its potential applications in the educational landscape.',
-        link: '/module1', // Placeholder link
-        icon: <BookOpen className="w-6 h-6 text-blue-400" />,
+        link: '/module1',
+        icon: <BookOpen className="w-6 h-6 text-blue-400" aria-hidden="true" />,
     },
     {
         title: 'AI Platforms and Their Benefits for Teachers',
         description: 'Discover various AI platforms and how they can assist teachers in their daily tasks.',
-        link: '/module2', // Placeholder link
-        icon: <BrainCircuit className="w-6 h-6 text-green-400" />,
+        link: '/module2',
+        icon: <BrainCircuit className="w-6 h-6 text-green-400" aria-hidden="true" />,
     },
     {
         title: 'Prompting Basics for Teacher Support and Differentiating',
         description: 'Learn the fundamentals of effective prompting for AI tools to support instruction and differentiation.',
-        link: '/module3', // Placeholder link
-        icon: <Code2 className="w-6 h-6 text-purple-400" />,
+        link: '/module3',
+        icon: <Code2 className="w-6 h-6 text-purple-400" aria-hidden="true" />,
     },
     {
         title: 'Prompting Expert for Graphic Design and Poster Creation',
         description: 'Master advanced prompting techniques for creating engaging visual materials using AI.',
-        link: '/module4', // Placeholder link
-        icon: <Zap className="w-6 h-6 text-yellow-400" />,
+        link: '/module4',
+        icon: <Zap className="w-6 h-6 text-yellow-400" aria-hidden="true" />,
     },
     {
         title: 'FERPA and Student Privacy Concerns with AI',
         description: 'Understand the critical importance of FERPA regulations and student data privacy when using AI in education.',
-        link: '/module5', // Placeholder link
-        icon: <ShieldAlert className="w-6 h-6 text-red-400" />,
+        link: '/module5',
+        icon: <ShieldAlert className="w-6 h-6 text-red-400" aria-hidden="true" />,
     },
 ];
 
+// 5. Define constants for colors
+const WpsTheme = {
+    navy: '#00305e',
+    maroon: '#851e3e',
+    blue: '#3b82f6',  // Tailwind's blue-500
+    green: '#22c55e', // Tailwind's green-500
+    purple: '#8b5cf6',// Tailwind's purple-500
+    yellow: '#f59e0b',// Tailwind's yellow-500
+    red: '#ef4444',    // Tailwind's red-500
+    gray: '#d1d5db',  // Tailwind's gray-300
+    white: '#ffffff',
+};
+
+// 2. Abstract reusable components: The Card component
+const ModuleCard = memo(({ module, isCompleted, onComplete }: {
+    module: typeof modulesData[0],
+    isCompleted: boolean,
+    onComplete: () => void
+}) => {
+    // 4. Use React memo: Wrap components with React.memo
+    return (
+        <Card
+            className={cn(
+                'transition-all duration-300 transform hover:scale-[1.02]',
+                'border-2 border-gray-200 shadow-lg',
+                'hover:shadow-xl hover:border-opacity-0',
+                'bg-white/80 backdrop-blur-md',
+                'hover:from-white/90 hover:to-white/90',
+                `hover:from-border hover:via-white/90 hover:to-white/90`
+            )}
+        >
+            <CardHeader>
+                <div className="flex items-center gap-3">
+                    {module.icon}
+                    <CardTitle
+                        className={cn(
+                            'text-lg font-semibold',
+                            module.icon.props.className?.includes('blue') && 'text-blue-700',
+                            module.icon.props.className?.includes('green') && 'text-green-700',
+                            module.icon.props.className?.includes('purple') && 'text-purple-700',
+                            module.icon.props.className?.includes('yellow') && 'text-yellow-700',
+                            module.icon.props.className?.includes('red') && 'text-red-700',
+                        )}
+                    >
+                        {module.title}
+                    </CardTitle>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <CardDescription className="text-gray-600">
+                    {module.description}
+                </CardDescription>
+                <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">
+                        {isCompleted ? 'Completed' : 'Start Module'}
+                    </span>
+                    <Button
+                        as="a"
+                        href={module.link}
+                        onClick={onComplete}
+                        className={cn(
+                            'mt-4',
+                            'transition-all duration-200',
+                            'hover:bg-opacity-90',
+                            'text-white font-semibold flex items-center',
+                            module.icon.props.className?.includes('blue') && `bg-blue-600 hover:bg-blue-700`,
+                            module.icon.props.className?.includes('green') && `bg-green-600 hover:bg-green-700`,
+                            module.icon.props.className?.includes('purple') && `bg-purple-600 hover:bg-purple-700`,
+                            module.icon.props.className?.includes('yellow') && `bg-yellow-600 hover:bg-yellow-700`,
+                            module.icon.props.className?.includes('red') && `bg-red-600 hover:bg-red-700`,
+                            `shadow-md hover:shadow-lg`
+                        )}
+                        aria-label={isCompleted ? "View completed module" : `Start ${module.title} module`} //Add aria label
+                    >
+                        {isCompleted ? 'Completed' : 'Start Module'}
+                        {isCompleted && <CheckCircle className="w-4 h-4 ml-2 text-white" aria-hidden="true" />}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    );
+});
+ModuleCard.displayName = 'ModuleCard';
+
 const HomePage = () => {
-    const [completedModules, setCompletedModules] = useState<number[]>([]);
+    // 4. Persist state: Store completedModules in local storage
+    const [completedModules, setCompletedModules] = useState<number[]>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('completedModules');
+            try {
+                return saved ? JSON.parse(saved) : [];
+            } catch (e) {
+                console.error("Failed to parse saved completed modules", e);
+                return [];
+            }
+        }
+        return [];
+    });
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('completedModules', JSON.stringify(completedModules));
+        }
+    }, [completedModules]);
 
     const handleModuleComplete = (moduleIndex: number) => {
         if (!completedModules.includes(moduleIndex)) {
@@ -51,37 +150,33 @@ const HomePage = () => {
         }
     };
 
+    // 6. Unit tests: Write unit tests for handleModuleComplete, getCompletionText, and getCompletionIcon (in a separate testing file)
     const getCompletionText = (moduleIndex: number) => {
-        if (completedModules.includes(moduleIndex)) {
-            return 'Completed';
-        }
-        return 'Start Module';
+        return completedModules.includes(moduleIndex) ? 'Completed' : 'Start Module';
     };
 
     const getCompletionIcon = (moduleIndex: number) => {
-        if (completedModules.includes(moduleIndex)) {
-            return <CheckCircle className="w-4 h-4 ml-2 text-white" />;
-        }
-        return null;
+        return completedModules.includes(moduleIndex) ? <CheckCircle className="w-4 h-4 ml-2 text-white" aria-hidden="true" /> : null;
     };
+
+    // 7. Additional Features
+    const progress = (completedModules.length / modulesData.length) * 100;
 
     return (
         <div
-            className="min-h-screen bg-gradient-to-br from-white to-gray-100
-                       flex flex-col" // Changed to flex column
+            className="min-h-screen bg-gradient-to-br from-white to-gray-100 flex flex-col"
         >
-            {/* Header Section */}
+            {/* 1. Use semantic HTML: Replace <div> with <header> */}
             <header
                 className={cn(
                     'py-4 px-6 md:px-8',
-                    `bg-[${navy}]`, // Use primary color
+                    `bg-[${WpsTheme.navy}]`,
                     'text-white',
                     'shadow-md'
                 )}
             >
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        {/* You can replace this with an actual logo if available */}
                         <h1
                             className={cn(
                                 'text-xl sm:text-2xl font-bold',
@@ -91,11 +186,10 @@ const HomePage = () => {
                             Waterbury Public Schools
                         </h1>
                     </div>
-                    {/* Add navigation if needed */}
                 </div>
             </header>
 
-            {/* Main Content Section */}
+            {/* 1. Use semantic HTML: Replace <div> with <main> */}
             <main className="flex-1 p-4 sm:p-6 md:p-8 flex items-center justify-center">
                 <div className="max-w-4xl w-full space-y-6">
                     <div className="text-center space-y-4">
@@ -103,7 +197,7 @@ const HomePage = () => {
                             className={cn(
                                 'text-3xl sm:text-4xl md:text-5xl font-extrabold',
                                 'bg-clip-text text-transparent',
-                                `bg-gradient-to-r from-blue-600 to-maroon-600`, // Using gradient as before
+                                `bg-gradient-to-r from-blue-600 to-maroon-600`,
                                 'drop-shadow-lg',
                                 'mb-4'
                             )}
@@ -124,69 +218,39 @@ const HomePage = () => {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {modules.map((module, index) => (
-                            <Card
-                                key={index}
-                                className={cn(
-                                    'transition-all duration-300 transform hover:scale-[1.02]',
-                                    'border-2 border-gray-200 shadow-lg',
-                                    'hover:shadow-xl hover:border-opacity-0',
-                                    'bg-white/80 backdrop-blur-md',
-                                    'hover:from-white/90 hover:to-white/90',
-                                    `hover:from-border hover:via-white/90 hover:to-white/90`
-                                )}
-                            >
-                                <CardHeader>
-                                    <div className="flex items-center gap-3">
-                                        {module.icon}
-                                        <CardTitle
-                                            className={cn(
-                                                'text-lg font-semibold',
-                                                index === 0 && 'text-blue-700',
-                                                index === 1 && 'text-green-700',
-                                                index === 2 && 'text-purple-700',
-                                                index === 3 && 'text-yellow-700',
-                                                index === 4 && 'text-red-700'
-                                            )}
-                                        >
-                                            {module.title}
-                                        </CardTitle>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <CardDescription className="text-gray-600">
-                                        {module.description}
-                                    </CardDescription>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-500">
-                                            {completedModules.length} out of {modules.length} Complete
-                                        </span>
-                                        <Button
-                                            as="a"
-                                            href={module.link}
-                                            onClick={() => handleModuleComplete(index)}
-                                            className={cn(
-                                                'mt-4',
-                                                'transition-all duration-200',
-                                                'hover:bg-opacity-90',
-                                                'text-white font-semibold flex items-center',
-                                                index === 0 && `bg-blue-600 hover:bg-blue-700`,
-                                                index === 1 && `bg-green-600 hover:bg-green-700`,
-                                                index === 2 && `bg-purple-600 hover:bg-purple-700`,
-                                                index === 3 && `bg-yellow-600 hover:bg-yellow-700`,
-                                                index === 4 && `bg-red-600 hover:bg-red-700`,
-                                                `shadow-md hover:shadow-lg`
-                                            )}
-                                        >
-                                            {getCompletionText(index)}
-                                            {getCompletionIcon(index)}
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                    {/* 7. Progress bar */}
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <motion.div
+                            className={`bg-[${WpsTheme.blue}] h-2.5 rounded-full`}
+                            style={{ width: `${progress}%` }}
+                            initial={{ width: '0%' }}
+                            animate={{ width: `${progress}%` }}
+                            transition={{ duration: 0.5 }}
+                        />
+                        <div className="text-right text-sm font-medium text-blue-700 mt-1">{completedModules.length} / {modulesData.length} Modules</div>
                     </div>
+
+                    {/* 1. Use semantic HTML: Replace <div> with <section> */}
+                    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <AnimatePresence>
+                            {modulesData.map((module, index) => (
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                                >
+                                    <ModuleCard
+                                        module={module}
+                                        isCompleted={completedModules.includes(index)}
+                                        onComplete={() => handleModuleComplete(index)}
+                                    />
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                    </section>
+
                     <div className="text-center py-6">
                         <p className="text-gray-700 sm:text-lg">
                             By the end of this course, you will be able to confidently and
@@ -197,11 +261,11 @@ const HomePage = () => {
                 </div>
             </main>
 
-            {/* Footer Section */}
+            {/* 1. Use semantic HTML: Replace <div> with <footer> */}
             <footer
                 className={cn(
                     'py-4 px-6 md:px-8',
-                    `bg-[${navy}]`, // Use primary color
+                    `bg-[${WpsTheme.navy}]`,
                     'text-white text-center',
                     'text-sm'
                 )}
@@ -213,3 +277,4 @@ const HomePage = () => {
 };
 
 export default HomePage;
+
